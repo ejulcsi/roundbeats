@@ -1,26 +1,34 @@
 <template>
   <div>
+    <button @click="resetBeats">reset</button>
     <vue-p5 @setup="setup"
             @draw="draw"
+            @mouseclicked="mouseclicked"
     ></vue-p5>
+    <audio ref="sound" src="../assets/hit.mp3" controls="" autobuffer></audio>
   </div>
 </template>
 
 <script>
 import VueP5 from 'vue-p5';
+/* eslint-disable no-console*/
 
 export default {
   name: 'circleCanvas',
   data () {
     return {
-      angles: [0, 90, 180, 270],
+      angles: 12,
       angle: 0,
-      tempo: 60,
+      tempo: 45,
       width: 0,
       height: 0,
       radius: 0,
       center: 0,
-      dots: []
+      dots: [],
+      dotSize: 5,
+      beats: [],
+      beatSize: 25,
+      sound: null
     }
   },
   computed: {
@@ -33,6 +41,11 @@ export default {
 //    }
   },
   methods: {
+    isAreaDetected(pointer ,target) {
+      const n = 10
+      return (pointer.x <= target.x + n && pointer.x >= target.x - n
+        && pointer.y <= target.y + n && pointer.y >= target.y - n)
+    },
     setup(sketch) {
       sketch.createCanvas(500, 500)
       sketch.background('#fafafa')
@@ -44,22 +57,24 @@ export default {
         x: this.width / 2,
         y: this.height / 2
       }
-      this.dots = this.createDots(sketch)
+      this.createDots(sketch)
     },
     createDots(sketch) {
       sketch.angleMode(sketch.DEGREES)
 
-      return this.angles.map(item => {
-        const x = this.center.x - (this.radius * sketch.sin(item * -1))
-        const y = this.center.y - (this.radius * sketch.cos(item * -1))
-        return sketch.createVector(x, y)
-      })
+      for (let i = 0; i < this.angles; i++) {
+        let angle = i * 360 / this.angles
+        const x = this.center.x - (this.radius * sketch.sin(angle * -1))
+        const y = this.center.y - (this.radius * sketch.cos(angle * -1))
+        this.dots.push(sketch.createVector(x, y))
+      }
     },
     draw(sketch) {
       sketch.clear()
       this.drawMainCircle(sketch)
       this.drawFinger(sketch)
       this.drawDots(sketch)
+      this.drawBeats(sketch)
     },
     drawMainCircle(sketch) {
       const size = this.width * 2 / 3
@@ -78,26 +93,51 @@ export default {
 
       this.angle -= this.tempo / 60
 
-
-//
-      this.dots.forEach((dot, i) => {
-        const n = 10
-        if (end.x <= dot.x + n && end.x >= dot.x - n
-          && end.y <= dot.y + n && end.y >= dot.y - n) {
-          sketch.fill('#d93f28')
-          sketch.noStroke()
-          sketch.ellipse(dot.x, dot.y, 50)
+      this.beats.forEach(beat => {
+        if (this.isAreaDetected(end, beat)) {
+          this.drawFullDot(sketch, beat, this.beatSize * 1.6, '#d93f28')
         }
       })
     },
     drawDots(sketch) {
-      const size = 30
       this.dots.forEach(item => {
-        sketch.fill('#d93f28')
-        sketch.noStroke()
-        sketch.ellipse(item.x, item.y, size)
+        this.drawFullDot(sketch, item, this.dotSize, '#321fb2')
       })
+    },
+    drawBeats(sketch) {
+      this.beats.forEach(beat => {
+        this.drawFullDot(sketch, beat, this.beatSize, '#d93f28')
+      })
+    },
+    mouseclicked(sketch) {
+      let mouse = {
+        x: sketch.mouseX,
+        y: sketch.mouseY
+      }
+
+      this.dots.forEach(dot => {
+        if (sketch.mouseClicked && this.isAreaDetected(mouse, dot)) {
+          let beatFound = this.beats.find(item => item.x === dot.x && item.y === dot.y)
+          if (beatFound) {
+            this.beats = this.beats.filter(beat => beat.x !== beatFound.x && beat.y !== beatFound.y)
+          } else {
+            this.beats.push({x: dot.x, y: dot.y})
+          }
+        }
+      })
+    },
+    drawFullDot(sketch,dot, size, color) {
+      sketch.fill(color)
+      sketch.noStroke()
+      sketch.ellipse(dot.x, dot.y, size)
+    },
+    resetBeats() {
+      this.beats = []
     }
+  },
+  mounted() {
+    this.sound = this.$el.querySelector('audio')
+    window.sound = this.sound
   },
   components: {
     VueP5
