@@ -7,12 +7,24 @@
            min="30" max="180" v-model="tempo">
     <label for="tempo">tempo: {{tempo}}</label>
     <div>
-      <label for="three">thirds</label>
-      <input type="radio" name="layout" id="three" value="3" v-model="layout">
-      <label for="four">fourths</label>
-      <input type="radio" name="layout" id="four" value="4"  v-model="layout">
-      <label for="four">eights</label>
-      <input type="radio" name="layout" id="eight" value="8"  v-model="layout">
+      <label for="three">3 beat</label>
+      <input type="radio" name="beatTempo" id="three" value="3" v-model="beatTempo">
+      <label for="four">4 beat</label>
+      <input type="radio" name="beatTempo" id="four" value="4"  v-model="beatTempo">
+    </div>
+    <div>
+      <label for="fourth">4 notes</label>
+      <input type="radio" name="notes" id="fourth" value="4" v-model="notes">
+      <label for="eighth">8 notes</label>
+      <input type="radio" name="notes" id="eighth" value="8"  v-model="notes">
+    </div>
+    <div>
+      <span class="beat" :style="{backgroundColor: getBeatColor('main')}"></span>
+      <label for="mainbeat">add main beats</label>
+      <input type="radio" name="role" id="mainbeat" value="main" v-model="role">
+      <span class="beat" :style="{backgroundColor: getBeatColor('off')}"></span>
+      <label for="offbeat">add offbeats</label>
+      <input type="radio" name="role" id="offbeat" value="off"  v-model="role">
     </div>
     <button @click="playPause">play / pause</button>
     <button @click="stop">stop</button>
@@ -34,7 +46,8 @@
     name: 'circleCanvas',
     data () {
       return {
-        layout: 4,
+        beatTempo: 4,
+        notes: 4,
         currentAngle: 0,
         tempo: 60,
         width: 0,
@@ -47,16 +60,27 @@
         beats: [],
         beatSize: 25,
         sound: null,
-        started: false
+        started: false,
+        role: 'main'
       }
     },
     computed: {
-       angles() {
-        return parseInt(this.layout, 10) * 3
-       },
+      angles() {
+        return parseInt(this.beatTempo, 10) * 3 * parseInt(this.notes, 10) / 4
+      },
       increment() {
-       const beat = parseInt(this.layout, 10) % 4 === 0 ? 4 : parseInt(this.layout, 10)
+        const beat = parseInt(this.beatTempo, 10) % 4 === 0 ? 4 : parseInt(this.beatTempo, 10)
         return 6 / beat
+      },
+      getBeatColor() {
+        return (role) => {
+          const colors = {
+            main: '#da3369',
+            off: '#8c63da'
+          }
+
+          return colors[role]
+        }
       }
     },
     methods: {
@@ -85,6 +109,7 @@
           y: this.height / 2,
         }
         this.createDots(this.radius)
+        sketch.rectMode(sketch.CENTER);
       },
       createDots(radius, update=false) {
         if (update) {
@@ -125,14 +150,14 @@
 
           this.beats.forEach(beat => {
             if (this.started && this.isAreaDetected(end, beat)) {
-              this.drawFullDot(sketch, beat, this.beatSize * 1.6, '#da3369')
+              this.drawFullDot(sketch, beat, this.beatSize * 1.6, beat.color)
               this.sound.play()
             }
           })
         })
         sketch.angleMode(sketch.DEGREES)
-
-        this.currentAngle = this.started ? this.currentAngle - (this.tempo * this.increment / sketch.frameRate()) : 0
+        let delta = this.started ? this.tempo * this.increment / sketch.frameRate() : 0
+        this.currentAngle -= delta
       },
       drawCircles (sketch) {
         this.circles.forEach(radius => {
@@ -148,7 +173,7 @@
       },
       drawBeats (sketch) {
         this.beats.forEach(beat => {
-          this.drawFullDot(sketch, beat, this.beatSize * (1 - (beat.circle * 0.08)), '#da3369')
+          this.drawFullDot(sketch, beat, this.beatSize * (1 - (beat.circle * 0.08)), beat.color)
         })
       },
       mouseclicked ({mouseX, mouseY}) {
@@ -162,9 +187,9 @@
             if (this.isAreaDetected(mouse, dot)) {
               let beatFound = this.beats.find(item => item.x === dot.x && item.y === dot.y)
               if (beatFound) {
-                this.beats = this.beats.filter(beat => beat.x !== beatFound.x && beat.y !== beatFound.y)
+                this.beats = this.beats.filter(beat => beat !== beatFound)
               } else {
-                this.beats.push({x: dot.x, y: dot.y, circle: i})
+                this.beats.push({x: dot.x, y: dot.y, circle: i, color: this.getBeatColor(this.role)})
               }
             }
           })
@@ -208,5 +233,13 @@
 <style>
   audio {
     display: none;
+  }
+
+  .beat {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin: 0 10px;
+    border-radius: 100%;
   }
 </style>
