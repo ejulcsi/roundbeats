@@ -11,6 +11,8 @@
       <input type="radio" name="layout" id="three" value="3" v-model="layout">
       <label for="four">fourths</label>
       <input type="radio" name="layout" id="four" value="4"  v-model="layout">
+      <label for="four">eights</label>
+      <input type="radio" name="layout" id="eight" value="8"  v-model="layout">
     </div>
     <button @click="playPause">play / pause</button>
     <button @click="stop">stop</button>
@@ -53,7 +55,8 @@
         return parseInt(this.layout, 10) * 3
        },
       increment() {
-         return 6 / parseInt(this.layout, 10)
+       const beat = parseInt(this.layout, 10) % 4 === 0 ? 4 : parseInt(this.layout, 10)
+        return 6 / beat
       }
     },
     methods: {
