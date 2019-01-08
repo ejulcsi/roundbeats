@@ -5,18 +5,21 @@
     <button @click="addCircle">add circle</button>
     <input type="range" id="tempo" name="tempo"
            min="30" max="180" v-model="tempo">
-    <label for="tempo">tempo</label>
+    <label for="tempo">tempo: {{tempo}}</label>
     <div>
       <label for="three">thirds</label>
       <input type="radio" name="layout" id="three" value="3" v-model="layout">
       <label for="four">fourths</label>
       <input type="radio" name="layout" id="four" value="4"  v-model="layout">
     </div>
+    <button @click="playPause">play / pause</button>
     <vue-p5 ref="rounds" @setup="setup"
             @draw="draw"
             @mouseclicked="mouseclicked"
     ></vue-p5>
-    <audio ref="sound" src="../assets/hit.mp3" controls="" autobuffer></audio>
+    <audio ref="sound" controls="" autobuffer>
+      <source src="../assets/hit.mp3" type="audio/mp3">
+    </audio>
   </div>
 </template>
 
@@ -29,7 +32,7 @@
     data () {
       return {
         layout: 4,
-        angle: 0,
+        currentAngle: 0,
         tempo: 60,
         width: 0,
         height: 0,
@@ -41,14 +44,21 @@
         beats: [],
         beatSize: 25,
         sound: null,
+        started: false
       }
     },
     computed: {
        angles() {
         return parseInt(this.layout, 10) * 3
+       },
+       increment() {
+         return this.started ? this.tempo : 0
        }
     },
     methods: {
+      playPause() {
+        this.started = !this.started
+      },
       isAreaDetected (pointer, target) {
         const n = 10
         return (pointer.x <= target.x + n && pointer.x >= target.x - n
@@ -98,21 +108,22 @@
       drawFinger (sketch) {
         this.circles.forEach(radius => {
           const end = {
-            x: this.center.x - (radius / 2 * sketch.sin(this.angle)),
-            y: this.center.y - (radius / 2 * sketch.cos(this.angle)),
+            x: this.center.x - (radius / 2 * sketch.sin(this.currentAngle)),
+            y: this.center.y - (radius / 2 * sketch.cos(this.currentAngle)),
           }
           sketch.angleMode(sketch.DEGREES)
           sketch.stroke('#6a44eb')
           sketch.line(this.center.x, this.center.y, end.x, end.y)
 
           this.beats.forEach(beat => {
-            if (this.isAreaDetected(end, beat)) {
+            if (this.started && this.isAreaDetected(end, beat)) {
               this.drawFullDot(sketch, beat, this.beatSize * 1.6, '#d93f28')
+              this.sound.play()
             }
           })
         })
 
-        this.angle -= this.tempo / 60
+        this.currentAngle -= this.increment / 60
       },
       drawCircles (sketch) {
         this.circles.forEach(radius => {
@@ -161,6 +172,7 @@
       resetCircles() {
         this.circles = [this.circles[0]]
         this.dots = [this.dots[0]]
+        this.resetBeats()
       },
       addCircle () {
         let radius = this.circles[this.circles.length - 1] * 0.6
@@ -170,7 +182,7 @@
     },
     mounted () {
       this.sound = this.$el.querySelector('audio')
-      window.sound = this.sound
+      this.sound.load()
     },
     components: {
       VueP5,
@@ -178,7 +190,13 @@
     watch: {
       angles() {
         this.createDots(this.radius, true)
-      }
+      },
     }
   }
 </script>
+
+<style>
+  audio {
+    display: none;
+  }
+</style>
