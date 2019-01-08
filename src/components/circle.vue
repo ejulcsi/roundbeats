@@ -81,7 +81,8 @@
       createDots(radius, update=false) {
         if (update) {
           this.dots = this.dots.map((e, i) => {
-            return this.getDots([], radius * (0.6 ** i) )
+//            return this.getDots([], radius * (0.66 ** i) )
+            return this.getDots([], radius * (1 - (0.25 * i)) )
           })
         } else {
           this.dots.push([])
@@ -134,12 +135,12 @@
       },
       drawDots (sketch) {
         this.dots.forEach(group => {
-          group.forEach(item => this.drawFullDot(sketch, item, this.dotSize, '#321fb2'))
+          group.forEach(dot => this.drawFullDot(sketch, dot, this.dotSize, '#321fb2'))
         })
       },
       drawBeats (sketch) {
         this.beats.forEach(beat => {
-          this.drawFullDot(sketch, beat, this.beatSize, '#d93f28')
+          this.drawFullDot(sketch, beat, this.beatSize * (1 - (beat.circle * 0.08)), '#d93f28')
         })
       },
       mouseclicked ({mouseX, mouseY}) {
@@ -148,14 +149,14 @@
           y: mouseY,
         }
 
-        this.dots.forEach(dotGroup => {
+        this.dots.forEach((dotGroup, i) => {
           dotGroup.forEach(dot => {
             if (this.isAreaDetected(mouse, dot)) {
               let beatFound = this.beats.find(item => item.x === dot.x && item.y === dot.y)
               if (beatFound) {
                 this.beats = this.beats.filter(beat => beat.x !== beatFound.x && beat.y !== beatFound.y)
               } else {
-                this.beats.push({x: dot.x, y: dot.y})
+                this.beats.push({x: dot.x, y: dot.y, circle: i})
               }
             }
           })
@@ -175,7 +176,8 @@
         this.resetBeats()
       },
       addCircle () {
-        let radius = this.circles[this.circles.length - 1] * 0.6
+        let radius = this.circles[0] * (1 - (0.25 * this.circles.length))
+//        let radius = this.circles[this.circles.length - 1] * 0.66
         this.circles.push(radius)
         this.createDots(radius / 2)
       },
