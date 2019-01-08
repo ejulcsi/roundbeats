@@ -13,6 +13,7 @@
       <input type="radio" name="layout" id="four" value="4"  v-model="layout">
     </div>
     <button @click="playPause">play / pause</button>
+    <button @click="stop">stop</button>
     <vue-p5 ref="rounds" @setup="setup"
             @draw="draw"
             @mouseclicked="mouseclicked"
@@ -51,13 +52,17 @@
        angles() {
         return parseInt(this.layout, 10) * 3
        },
-       increment() {
-         return this.started ? this.tempo : 0
-       }
+      increment() {
+         return 6 / parseInt(this.layout, 10)
+      }
     },
     methods: {
       playPause() {
         this.started = !this.started
+      },
+      stop() {
+        this.started = false
+        this.currentAngle = 0
       },
       isAreaDetected (pointer, target) {
         const n = 10
@@ -112,19 +117,19 @@
             x: this.center.x - (radius / 2 * sketch.sin(this.currentAngle)),
             y: this.center.y - (radius / 2 * sketch.cos(this.currentAngle)),
           }
-          sketch.angleMode(sketch.DEGREES)
           sketch.stroke('#6a44eb')
           sketch.line(this.center.x, this.center.y, end.x, end.y)
 
           this.beats.forEach(beat => {
             if (this.started && this.isAreaDetected(end, beat)) {
-              this.drawFullDot(sketch, beat, this.beatSize * 1.6, '#d93f28')
+              this.drawFullDot(sketch, beat, this.beatSize * 1.6, '#da3369')
               this.sound.play()
             }
           })
         })
+        sketch.angleMode(sketch.DEGREES)
 
-        this.currentAngle -= this.increment / 60
+        this.currentAngle = this.started ? this.currentAngle - (this.tempo * this.increment / sketch.frameRate()) : 0
       },
       drawCircles (sketch) {
         this.circles.forEach(radius => {
@@ -140,7 +145,7 @@
       },
       drawBeats (sketch) {
         this.beats.forEach(beat => {
-          this.drawFullDot(sketch, beat, this.beatSize * (1 - (beat.circle * 0.08)), '#d93f28')
+          this.drawFullDot(sketch, beat, this.beatSize * (1 - (beat.circle * 0.08)), '#da3369')
         })
       },
       mouseclicked ({mouseX, mouseY}) {
