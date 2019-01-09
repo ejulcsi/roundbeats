@@ -1,41 +1,52 @@
 <template>
   <div>
-    <button @click="resetBeats">reset beats</button>
-    <button @click="resetCircles">reset circles</button>
-    <button @click="addCircle">add circle</button>
-    <input type="range" id="tempo" name="tempo"
-           min="30" max="180" v-model="tempo">
-    <label for="tempo">tempo: {{tempo}}</label>
-    <div>
-      <label for="three">3 beat</label>
-      <input type="radio" name="beatTempo" id="three" value="3" v-model="beatTempo">
-      <label for="four">4 beat</label>
-      <input type="radio" name="beatTempo" id="four" value="4"  v-model="beatTempo">
+    <div id="controls">
+      <div class="control-column">
+        <button @click="addCircle">add circle</button>
+        <button @click="resetCircles">reset circles</button>
+      </div>
+      <div class="control-column">
+        <div class="input-group">
+          <input type="radio" name="beatTempo" id="three" value="3" v-model="beatTempo">
+          <label for="three">3 beat</label>
+          <input type="radio" name="beatTempo" id="four" value="4"  v-model="beatTempo">
+          <label for="four">4 beat</label>
+        </div>
+        <div class="input-group">
+          <input type="radio" name="notes" id="fourth" value="4" v-model="notes">
+          <label for="fourth">4 notes</label>
+          <input type="radio" name="notes" id="eighth" value="8"  v-model="notes">
+          <label for="eighth">8 notes</label>
+        </div>
+        <input type="range" id="tempo" name="tempo"
+               min="30" max="180" v-model="tempo">
+        <label for="tempo">tempo: {{tempo}}</label>
+      </div>
+      <div class="control-column">
+        <div class="input-group">
+          <input type="radio" name="role" id="mainbeat" value="main" v-model="role">
+          <label for="mainbeat">add main beats</label>
+          <span class="beat" :style="{backgroundColor: getBeatColor('main')}"></span>
+        </div>
+        <div class="input-group">
+          <input type="radio" name="role" id="offbeat" value="off"  v-model="role">
+          <label for="offbeat">add offbeats</label>
+          <span class="beat" :style="{backgroundColor: getBeatColor('off')}"></span>
+        </div>
+        <button @click="resetBeats">reset beats</button>
+      </div>
     </div>
-    <div>
-      <label for="fourth">4 notes</label>
-      <input type="radio" name="notes" id="fourth" value="4" v-model="notes">
-      <label for="eighth">8 notes</label>
-      <input type="radio" name="notes" id="eighth" value="8"  v-model="notes">
-    </div>
-    <div>
-      <span class="beat" :style="{backgroundColor: getBeatColor('main')}"></span>
-      <label for="mainbeat">add main beats</label>
-      <input type="radio" name="role" id="mainbeat" value="main" v-model="role">
-      <span class="beat" :style="{backgroundColor: getBeatColor('off')}"></span>
-      <label for="offbeat">add offbeats</label>
-      <input type="radio" name="role" id="offbeat" value="off"  v-model="role">
-    </div>
-    <button @click="playPause">play / pause</button>
-    <button @click="stop">stop</button>
+
+    <button class="big-button" @click="playPause">play / pause</button>
+    <button class="big-button" @click="stop">stop</button>
     <vue-p5 ref="rounds" @setup="setup"
-            @draw="draw"
-            @mouseclicked="mouseclicked"
+          @draw="draw"
+          @mouseclicked="mouseclicked"
     ></vue-p5>
-§    <audio ref="hitSound" controls="" autobuffer>
+    <audio ref="hitSound" autobuffer>
       <source src="../assets/hit.mp3" type="audio/mp3">
     </audio>
-    <audio ref="offSound" controls="" autobuffer>
+    <audio ref="offSound" autobuffer>
       <source src="../assets/tamb.mp3" type="audio/mp3">
     </audio>
   </div>
@@ -121,7 +132,6 @@
       createDots(radius, update=false) {
         if (update) {
           this.dots = this.dots.map((e, i) => {
-//            return this.getDots([], radius * (0.66 ** i) )
             return this.getDots([], radius * (1 - (0.25 * i)) )
           })
         } else {
@@ -156,10 +166,10 @@
           sketch.line(this.center.x, this.center.y, end.x, end.y)
 
           this.beats.forEach(beat => {
+            const beatSound = this.sounds[beat.role]
             if (this.started && this.isAreaDetected(end, beat)) {
               this.drawFullDot(sketch, beat, this.beatSize * 1.6, this.getBeatColor(beat.role))
-              this.sounds[beat.role].play()
-              console.log(this.sounds, beat.role)
+              beatSound.play()
             }
           })
         })
@@ -219,7 +229,6 @@
       },
       addCircle () {
         let radius = this.circles[0] * (1 - (0.25 * this.circles.length))
-//        let radius = this.circles[this.circles.length - 1] * 0.66
         this.circles.push(radius)
         this.createDots(radius / 2)
       },
@@ -242,6 +251,33 @@
 </script>
 
 <style>
+  #controls {
+    width: 500px;
+    margin: 0 auto 30px;
+    display: flex;
+  }
+
+  .control-column {
+    display: flex;
+    flex-flow: column wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin: 0 5px;
+  }
+
+  .control-column:first-of-type {
+    width: 120px
+  }
+
+  .control-column button {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .input-group {
+    margin-bottom: 5px;
+  }
+
   audio {
     display: none;
   }
@@ -252,5 +288,22 @@
     height: 14px;
     margin: 0 10px;
     border-radius: 100%;
+  }
+
+  label {
+    margin: 0 5px;
+  }
+
+  button {
+    font-size: 14px;
+    border-radius: 4px;
+    margin: 0 5px;
+  }
+
+  button.big-button {
+    font-size: 16px;
+    padding: 5px 10px;
+    border-color: #3f298c;
+    color: #3f298c;
   }
 </style>
