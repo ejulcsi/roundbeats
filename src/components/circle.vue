@@ -49,6 +49,7 @@
     <audio ref="offSound" autobuffer>
       <source src="../assets/tamb.mp3" type="audio/mp3">
     </audio>
+    <p>inspired by <a href="https://www.youtube.com/watch?v=2UphAzryVpY">John Varney's wheel method</a></p>
   </div>
 </template>
 
@@ -117,10 +118,10 @@
           && pointer.y <= target.y + n && pointer.y >= target.y - n)
       },
       setup (sketch) {
-        sketch.createCanvas(500, 500)
+        sketch.createCanvas(400, 400)
         sketch.background('#fafafa')
         sketch.strokeWeight(6)
-        this.radius = sketch.width / 3
+        this.radius = sketch.width * 0.44
         this.circles.push(this.radius * 2)
         this.center = {
           x: sketch.width / 2,
