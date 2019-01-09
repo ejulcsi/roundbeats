@@ -32,8 +32,11 @@
             @draw="draw"
             @mouseclicked="mouseclicked"
     ></vue-p5>
-    <audio ref="sound" controls="" autobuffer>
+§    <audio ref="hitSound" controls="" autobuffer>
       <source src="../assets/hit.mp3" type="audio/mp3">
+    </audio>
+    <audio ref="offSound" controls="" autobuffer>
+      <source src="../assets/tamb.mp3" type="audio/mp3">
     </audio>
   </div>
 </template>
@@ -41,6 +44,11 @@
 <script>
   import VueP5 from 'vue-p5'
   /* eslint-disable no-console*/
+
+  let ROLES = {
+    main: 'main',
+    off: 'off'
+  }
 
   export default {
     name: 'circleCanvas',
@@ -50,8 +58,6 @@
         notes: 4,
         currentAngle: 0,
         tempo: 60,
-        width: 0,
-        height: 0,
         radius: 0,
         center: 0,
         circles: [],
@@ -59,9 +65,12 @@
         dotSize: 5,
         beats: [],
         beatSize: 25,
-        sound: null,
+        sounds: {
+          [ROLES.main]: null,
+          [ROLES.off]: null
+        },
         started: false,
-        role: 'main'
+        role: ROLES.main
       }
     },
     computed: {
@@ -100,13 +109,11 @@
         sketch.createCanvas(500, 500)
         sketch.background('#fafafa')
         sketch.strokeWeight(6)
-        this.width = sketch.width
-        this.height = sketch.height
-        this.radius = this.width / 3
+        this.radius = sketch.width / 3
         this.circles.push(this.radius * 2)
         this.center = {
-          x: this.width / 2,
-          y: this.height / 2,
+          x: sketch.width / 2,
+          y: sketch.height / 2,
         }
         this.createDots(this.radius)
         sketch.rectMode(sketch.CENTER);
@@ -150,8 +157,9 @@
 
           this.beats.forEach(beat => {
             if (this.started && this.isAreaDetected(end, beat)) {
-              this.drawFullDot(sketch, beat, this.beatSize * 1.6, beat.color)
-              this.sound.play()
+              this.drawFullDot(sketch, beat, this.beatSize * 1.6, this.getBeatColor(beat.role))
+              this.sounds[beat.role].play()
+              console.log(this.sounds, beat.role)
             }
           })
         })
@@ -163,7 +171,7 @@
         this.circles.forEach(radius => {
           sketch.stroke('#34ebac')
           sketch.noFill()
-          sketch.ellipse(this.width / 2, this.height / 2, radius)
+          sketch.ellipse(this.center.x, this.center.y, radius)
         })
       },
       drawDots (sketch) {
@@ -173,7 +181,8 @@
       },
       drawBeats (sketch) {
         this.beats.forEach(beat => {
-          this.drawFullDot(sketch, beat, this.beatSize * (1 - (beat.circle * 0.08)), beat.color)
+          const size = this.beatSize * (1 - (beat.circle * 0.08))
+          this.drawFullDot(sketch, beat, size, this.getBeatColor(beat.role))
         })
       },
       mouseclicked ({mouseX, mouseY}) {
@@ -189,7 +198,7 @@
               if (beatFound) {
                 this.beats = this.beats.filter(beat => beat !== beatFound)
               } else {
-                this.beats.push({x: dot.x, y: dot.y, circle: i, color: this.getBeatColor(this.role)})
+                this.beats.push({x: dot.x, y: dot.y, circle: i, role: this.role})
               }
             }
           })
@@ -216,8 +225,10 @@
       },
     },
     mounted () {
-      this.sound = this.$el.querySelector('audio')
-      this.sound.load()
+      this.sounds.main = this.$refs.hitSound
+      this.sounds.off = this.$refs.offSound
+      this.sounds.main.load()
+      this.sounds.off.load()
     },
     components: {
       VueP5,
