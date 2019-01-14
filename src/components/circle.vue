@@ -36,9 +36,11 @@
         <button @click="resetBeats">reset beats</button>
       </div>
     </div>
-
+    <p>click on the dots to add beats</p>
     <button class="big-button" @click="playPause">play / pause</button>
-    <button class="big-button" @click="stop">stop</button>
+    <button class="big-button" @click="stopPlaying">stop</button>
+    <button class="big-button" @mouseup="rotate('right')">rotate right</button>
+    <button class="big-button" @mouseup="rotate('left')">rotate left</button>
     <vue-p5 ref="rounds" @setup="setup"
           @draw="draw"
           @mouseclicked="mouseclicked"
@@ -82,10 +84,19 @@
           [ROLES.off]: null
         },
         started: false,
-        role: ROLES.main
+        role: ROLES.main,
+        isRotating: false,
+        rotationDir: ''
       }
     },
     computed: {
+      isMobile() {
+        return window.innerWidth < 480
+      },
+      canvasSize () {
+        return this.isMobile ? window.innerWidth * 0.9 : window.innerHeight * 0.6
+//        return initSize < 300 ? 300 : initSize
+      },
       angles() {
         return parseInt(this.beatTempo, 10) * 3 * parseInt(this.notes, 10) / 4
       },
@@ -102,15 +113,23 @@
 
           return colors[role]
         }
+      },
+      rotation() {
+        const dir = this.rotationDir === 'right' ? -1 : 1
+        return 360 / this.angles * dir
       }
     },
     methods: {
       playPause() {
         this.started = !this.started
       },
-      stop() {
+      stopPlaying() {
         this.started = false
         this.currentAngle = 0
+      },
+      rotate(dir) {
+        this.rotationDir = dir
+        this.isRotating = true
       },
       isAreaDetected (pointer, target) {
         const n = 10
@@ -118,7 +137,7 @@
           && pointer.y <= target.y + n && pointer.y >= target.y - n)
       },
       setup (sketch) {
-        sketch.createCanvas(400, 400)
+        sketch.createCanvas(this.canvasSize, this.canvasSize)
         sketch.background('#fafafa')
         sketch.strokeWeight(6)
         this.radius = sketch.width * 0.44
@@ -145,7 +164,7 @@
           const angle = i * 2 * Math.PI / this.angles
           const x = this.center.x - (radius * Math.sin(angle * -1))
           const y = this.center.y - (radius * Math.cos(angle * -1))
-          array.push({x, y})
+          array.push({x, y, angle})
         }
         return array
       },
@@ -169,7 +188,7 @@
           this.beats.forEach(beat => {
             const beatSound = this.sounds[beat.role]
             if (this.started && this.isAreaDetected(end, beat)) {
-              this.drawFullDot(sketch, beat, this.beatSize * 1.6, this.getBeatColor(beat.role))
+              this.drawFullDot(sketch, beat, this.getBeatColor(beat.role), this.beatSize * 1.6)
               beatSound.play()
             }
           })
@@ -187,14 +206,41 @@
       },
       drawDots (sketch) {
         this.dots.forEach(group => {
-          group.forEach(dot => this.drawFullDot(sketch, dot, this.dotSize, '#321fb2'))
+          group.forEach(dot => this.drawFullDot(sketch, dot, '#321fb2'))
         })
       },
+      drawFullDot (sketch, dot, color, size) {
+        const drawSize = size || dot.size || this.dotSize
+        sketch.fill(color)
+        sketch.noStroke()
+        sketch.ellipse(dot.x, dot.y, drawSize)
+      },
       drawBeats (sketch) {
-        this.beats.forEach(beat => {
-          const size = this.beatSize * (1 - (beat.circle * 0.08))
-          this.drawFullDot(sketch, beat, size, this.getBeatColor(beat.role))
-        })
+        if (this.isRotating === true) {
+          this.beats.forEach(beat => {
+            beat = this.rotateBeats(sketch, beat)
+            this.drawFullDot(sketch, beat, this.getBeatColor(beat.role))
+          })
+          this.isRotating = false
+        } else {
+          this.beats.forEach(beat => {
+            this.drawFullDot(sketch, beat, this.getBeatColor(beat.role))
+          })
+        }
+      },
+      rotateBeats(sketch, beat) {
+        sketch.angleMode(sketch.DEGREES)
+        const angle = beat.angle + this.rotation
+        const radius = this.radius * (1 - (0.25 * beat.circle))
+        const rotated = {
+          x: this.center.x - (radius * sketch.sin(angle)),
+          y: this.center.y - (radius * sketch.cos(angle))
+        }
+
+        beat.x = rotated.x
+        beat.y = rotated.y
+        beat.angle = angle
+        return beat
       },
       mouseclicked ({mouseX, mouseY}) {
         let mouse = {
@@ -202,23 +248,25 @@
           y: mouseY,
         }
 
-        this.dots.forEach((dotGroup, i) => {
+        this.dots.forEach((dotGroup, circle) => {
           dotGroup.forEach(dot => {
             if (this.isAreaDetected(mouse, dot)) {
               let beatFound = this.beats.find(item => item.x === dot.x && item.y === dot.y)
               if (beatFound) {
                 this.beats = this.beats.filter(beat => beat !== beatFound)
               } else {
-                this.beats.push({x: dot.x, y: dot.y, circle: i, role: this.role})
+                this.beats.push({
+                  x: dot.x,
+                  y: dot.y,
+                  angle: dot.angle / Math.PI * 180 * -1,
+                  circle,
+                  size: this.beatSize * (1 - (circle * 0.08)),
+                  role: this.role
+                })
               }
             }
           })
         })
-      },
-      drawFullDot (sketch, dot, size, color) {
-        sketch.fill(color)
-        sketch.noStroke()
-        sketch.ellipse(dot.x, dot.y, size)
       },
       resetBeats () {
         this.beats = []
@@ -306,5 +354,9 @@
     padding: 5px 10px;
     border-color: #3f298c;
     color: #3f298c;
+  }
+
+  p {
+    margin: 0 0 7px;
   }
 </style>
