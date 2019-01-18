@@ -51,7 +51,7 @@
     <audio ref="offSound" autobuffer>
       <source src="../assets/tamb.mp3" type="audio/mp3">
     </audio>
-    <p>inspired by <a href="https://www.youtube.com/watch?v=2UphAzryVpY">John Varney's wheel method</a></p>
+    <p>inspired by <a href="https://www.youtube.com/watch?v=2UphAzryVpY" target="_blank">John Varney's wheel method</a></p>
   </div>
 </template>
 
@@ -297,7 +297,7 @@
   #controls {
     width: 500px;
     padding: 15px 5px;
-    margin: 0 auto 20px;
+    margin: 0 auto 15px;
     display: flex;
     border-radius: 7px;
     border: 1px solid #3f298c;
@@ -360,6 +360,6 @@
   }
 
   p {
-    margin: 0 0 7px;
+    margin: 0 0 10px;
   }
 </style>
