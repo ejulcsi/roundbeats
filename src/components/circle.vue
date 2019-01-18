@@ -100,10 +100,6 @@
       angles() {
         return parseInt(this.beatTempo, 10) * 3 * parseInt(this.notes, 10) / 4
       },
-      increment() {
-        const beat = parseInt(this.beatTempo, 10) % 4 === 0 ? 4 : parseInt(this.beatTempo, 10)
-        return 6 / beat
-      },
       beatColor() {
         return (role) => {
           const colors = {
@@ -200,7 +196,7 @@
           })
         })
         sketch.angleMode(sketch.DEGREES)
-        let delta = this.started ? this.tempo * this.increment / sketch.frameRate() : 0
+        let delta = this.started ? this.tempo * 1.5 / sketch.frameRate() : 0
         this.currentAngle -= delta
       },
       drawCircles (sketch) {
